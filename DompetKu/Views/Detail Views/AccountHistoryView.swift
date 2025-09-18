@@ -51,9 +51,12 @@ struct AccountHistoryView: View {
                             VStack(alignment: .leading) {
                                 Text(transaction.name)
                                     .font(.headline)
-                                Text(transaction.category)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                
+                                if let categoryName = transaction.category {
+                                    Text(categoryName)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                             Spacer()
                             VStack(alignment: .trailing) {

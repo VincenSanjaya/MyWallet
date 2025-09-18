@@ -6,7 +6,7 @@ struct WalletView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \WalletAccount.name) var accounts: [WalletAccount]
     @State private var isShowingAddAccountView = false
-    @State private var accountToEdit: WalletAccount?
+    @State private var accountToAddBalance: WalletAccount?
 
     @ViewBuilder
     private func accountIcon(for account: WalletAccount) -> some View {
@@ -64,7 +64,7 @@ struct WalletView: View {
                                         }
                                         Spacer()
                                         Button {
-                                            accountToEdit = account
+                                            accountToAddBalance = account
                                         } label: {
                                             Image(systemName: "plus.circle.fill")
                                                 .foregroundStyle(.green)
@@ -73,7 +73,7 @@ struct WalletView: View {
                                     }
                                 }
                             }
-                            .onDelete(perform: deleteAccount) // <-- Tambahkan modifier ini
+                            .onDelete(perform: deleteAccount)
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -81,6 +81,16 @@ struct WalletView: View {
             }
             .navigationTitle("Wallet")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    HStack {
+                        NavigationLink(destination: CategoriesView()) {
+                            Image(systemName: "tag.fill")
+                        }
+                        NavigationLink(destination: RecurringView()) {
+                            Image(systemName: "arrow.2.circlepath")
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { isShowingAddAccountView.toggle() } label: { Image(systemName: "plus") }
                 }
@@ -88,7 +98,7 @@ struct WalletView: View {
             .sheet(isPresented: $isShowingAddAccountView) {
                 AddAccountView()
             }
-            .sheet(item: $accountToEdit) { account in
+            .sheet(item: $accountToAddBalance) { account in
                 AddBalanceView(account: account)
             }
         }

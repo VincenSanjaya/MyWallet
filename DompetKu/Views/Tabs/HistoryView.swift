@@ -8,10 +8,11 @@ struct HistoryView: View {
     @State private var transactionToEdit: Transaction?
 
     private func deleteTransaction(at offsets: IndexSet, from transactions: [Transaction]) {
-        let transactionsToDelete = offsets.map { transactions[$0] }
-        for transaction in transactionsToDelete {
+        for index in offsets {
+            let transaction = transactions[index]
             if let account = transaction.account {
-                account.balance += transaction.amount
+                let amountToChange = transaction.transactionType == .income ? -transaction.amount : transaction.amount
+                account.balance += amountToChange
             }
             modelContext.delete(transaction)
         }
@@ -29,33 +30,38 @@ struct HistoryView: View {
                 }
                 
                 if !transactionsOnSelectedDate.isEmpty {
-                    let totalsByAccount = Dictionary(grouping: transactionsOnSelectedDate, by: { $0.account?.name ?? "Lainnya" })
-                        .mapValues { $0.reduce(0) { $0 + $1.amount } }
-                        .sorted(by: { $0.key < $1.key })
-
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("Ringkasan Pengeluaran")
+                        let totalIncome = transactionsOnSelectedDate.filter { $0.transactionType == .income }.reduce(0) { $0 + $1.amount }
+                        let totalExpense = transactionsOnSelectedDate.filter { $0.transactionType == .expense }.reduce(0) { $0 + $1.amount }
+
+                        Text("Ringkasan Tanggal Ini")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.bottom, 2)
                         
-                        ForEach(totalsByAccount, id: \.key) { accountName, total in
-                            HStack {
-                                Text(accountName)
-                                Spacer()
-                                Text(total, format: .currency(code: "IDR"))
-                            }
-                            .font(.subheadline)
+                        HStack {
+                            Text("Pemasukan")
+                            Spacer()
+                            Text(totalIncome, format: .currency(code: "IDR"))
+                                .foregroundStyle(.green)
                         }
+                        .font(.subheadline)
+                        
+                        HStack {
+                            Text("Pengeluaran")
+                            Spacer()
+                            Text(totalExpense, format: .currency(code: "IDR"))
+                                .foregroundStyle(.red)
+                        }
+                        .font(.subheadline)
                         
                         Divider()
                         
                         HStack {
-                            Text("Total Keseluruhan")
+                            Text("Arus Kas Bersih")
                                 .font(.headline)
                             Spacer()
-                            let grandTotal = transactionsOnSelectedDate.reduce(0) { $0 + $1.amount }
-                            Text(grandTotal, format: .currency(code: "IDR"))
+                            Text(totalIncome - totalExpense, format: .currency(code: "IDR"))
                                 .font(.headline.bold())
                         }
                     }
@@ -73,16 +79,17 @@ struct HistoryView: View {
                 } else {
                     List {
                         ForEach(transactionsOnSelectedDate) { transaction in
-                            Button {
-                                transactionToEdit = transaction
-                            } label: {
+                            Button(action: { transactionToEdit = transaction }) {
                                 HStack {
                                     VStack(alignment: .leading) {
                                         Text(transaction.name).font(.headline)
                                         HStack(spacing: 4) {
-                                            Text(transaction.category)
+                                            if let categoryName = transaction.category {
+                                                Text(categoryName)
+                                            }
+
                                             if let accountName = transaction.account?.name {
-                                                Text("•")
+                                                Text(transaction.category == nil ? "" : "•")
                                                 Image(systemName: "wallet.pass.fill")
                                                 Text(accountName)
                                             }
@@ -91,7 +98,9 @@ struct HistoryView: View {
                                         .foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
+                                    Text(transaction.amount, format: .currency(code: "IDR"))
+                                        .font(.headline.bold())
+                                        .foregroundStyle(transaction.transactionType == .income ? .green : .red)
                                 }
                                 .foregroundStyle(.primary)
                             }

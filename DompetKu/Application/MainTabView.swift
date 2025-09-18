@@ -16,8 +16,8 @@ struct MainTabView: View {
             BudgetView()
                 .tabItem { Label("Budget", systemImage: "chart.pie.fill") }
             
-            CategoriesView()
-                .tabItem { Label("Kategori", systemImage: "tag.fill") }
+            ReportsView()
+                .tabItem { Label("Laporan", systemImage: "chart.bar.xaxis") }
 
             WalletView()
                 .tabItem { Label("Wallet", systemImage: "wallet.pass.fill") }

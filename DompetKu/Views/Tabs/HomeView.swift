@@ -11,10 +11,11 @@ struct HomeView: View {
     @Query(sort: \Category.name) var categories: [Category]
 
     private func deleteTransaction(at offsets: IndexSet, from filteredTransactions: [Transaction]) {
-        let transactionsToDelete = offsets.map { filteredTransactions[$0] }
-        for transaction in transactionsToDelete {
+        for index in offsets {
+            let transaction = filteredTransactions[index]
             if let account = transaction.account {
-                account.balance += transaction.amount
+                let amountToChange = transaction.transactionType == .income ? -transaction.amount : transaction.amount
+                account.balance += amountToChange
             }
             modelContext.delete(transaction)
         }
@@ -30,36 +31,40 @@ struct HomeView: View {
                 }
                 
                 if !filteredTodaysTransactions.isEmpty {
-                    let totalsByAccount = Dictionary(grouping: filteredTodaysTransactions, by: { $0.account?.name ?? "Lainnya" })
-                        .mapValues { $0.reduce(0) { $0 + $1.amount } }
-                        .sorted(by: { $0.key < $1.key })
-
                     VStack(alignment: .leading, spacing: 5) {
+                        let totalIncome = filteredTodaysTransactions.filter { $0.transactionType == .income }.reduce(0) { $0 + $1.amount }
+                        let totalExpense = filteredTodaysTransactions.filter { $0.transactionType == .expense }.reduce(0) { $0 + $1.amount }
+
                         Text("Ringkasan Hari Ini")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.bottom, 2)
                         
-                        ForEach(totalsByAccount, id: \.key) { accountName, total in
-                            HStack {
-                                Text(accountName)
-                                Spacer()
-                                Text(total, format: .currency(code: "IDR"))
-                            }
-                            .font(.subheadline)
+                        HStack {
+                            Text("Pemasukan")
+                            Spacer()
+                            Text(totalIncome, format: .currency(code: "IDR"))
+                                .foregroundStyle(.green)
                         }
+                        .font(.subheadline)
+                        
+                        HStack {
+                            Text("Pengeluaran")
+                            Spacer()
+                            Text(totalExpense, format: .currency(code: "IDR"))
+                                .foregroundStyle(.red)
+                        }
+                        .font(.subheadline)
                         
                         Divider()
                         
                         HStack {
-                            Text("Total Keseluruhan")
+                            Text("Arus Kas Bersih")
                                 .font(.headline)
                             Spacer()
-                            let grandTotal = filteredTodaysTransactions.reduce(0) { $0 + $1.amount }
-                            Text(grandTotal, format: .currency(code: "IDR"))
+                            Text(totalIncome - totalExpense, format: .currency(code: "IDR"))
                                 .font(.headline.bold())
                         }
-                        
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,16 +83,17 @@ struct HomeView: View {
                 } else {
                     List {
                         ForEach(filteredTodaysTransactions) { transaction in
-                            Button {
-                                transactionToEdit = transaction
-                            } label: {
+                            Button(action: { transactionToEdit = transaction }) {
                                 HStack {
                                     VStack(alignment: .leading) {
                                         Text(transaction.name).font(.headline)
                                         HStack(spacing: 4) {
-                                            Text(transaction.category)
+                                            if let categoryName = transaction.category {
+                                                Text(categoryName)
+                                            }
+                                            
                                             if let accountName = transaction.account?.name {
-                                                Text("•")
+                                                Text(transaction.category == nil ? "" : "•")
                                                 Image(systemName: "wallet.pass.fill")
                                                 Text(accountName)
                                             }
@@ -96,7 +102,9 @@ struct HomeView: View {
                                         .foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
+                                    Text(transaction.amount, format: .currency(code: "IDR"))
+                                        .font(.headline.bold())
+                                        .foregroundStyle(transaction.transactionType == .income ? .green : .red)
                                 }
                                 .foregroundStyle(.primary)
                             }
