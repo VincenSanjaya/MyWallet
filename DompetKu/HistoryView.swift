@@ -2,8 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct HistoryView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Transaction.date, order: .reverse) var allTransactions: [Transaction]
     @State private var selectedDate: Date = .now
+    @State private var transactionToEdit: Transaction?
+
+    private func deleteTransaction(at offsets: IndexSet, from transactions: [Transaction]) {
+        let transactionsToDelete = offsets.map { transactions[$0] }
+        for transaction in transactionsToDelete {
+            if let account = transaction.account {
+                account.balance += transaction.amount
+            }
+            modelContext.delete(transaction)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,6 +47,7 @@ struct HistoryView: View {
                             }
                             .font(.subheadline)
                         }
+                        
                         Divider()
                         
                         HStack {
@@ -60,29 +73,40 @@ struct HistoryView: View {
                 } else {
                     List {
                         ForEach(transactionsOnSelectedDate) { transaction in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(transaction.name).font(.headline)
-                                    HStack(spacing: 4) {
-                                        Text(transaction.category)
-                                        if let accountName = transaction.account?.name {
-                                            Text("•")
-                                            Image(systemName: "wallet.pass.fill")
-                                            Text(accountName)
+                            Button {
+                                transactionToEdit = transaction
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(transaction.name).font(.headline)
+                                        HStack(spacing: 4) {
+                                            Text(transaction.category)
+                                            if let accountName = transaction.account?.name {
+                                                Text("•")
+                                                Image(systemName: "wallet.pass.fill")
+                                                Text(accountName)
+                                            }
                                         }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                     }
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
                                 }
-                                Spacer()
-                                Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
+                                .foregroundStyle(.primary)
                             }
+                        }
+                        .onDelete { offsets in
+                            deleteTransaction(at: offsets, from: transactionsOnSelectedDate)
                         }
                     }
                     .listStyle(.plain)
                 }
             }
             .navigationTitle("Riwayat Transaksi")
+        }
+        .sheet(item: $transactionToEdit) { transaction in
+            TransactionFormView(transactionToEdit: transaction)
         }
     }
 }

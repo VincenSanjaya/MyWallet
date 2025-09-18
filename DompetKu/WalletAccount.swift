@@ -14,6 +14,9 @@ class WalletAccount {
     @Relationship(deleteRule: .cascade, inverse: \AccountLog.account)
     var logs: [AccountLog] = []
 
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.account)
+    var transactions: [Transaction]? = []
+
     @Transient var color: Color {
         get {
             if let uiColor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: UIColor.self, from: colorData) {
@@ -35,7 +38,7 @@ class WalletAccount {
         self.colorData = Data()
         self.iconName = iconName
         self.iconImageData = iconImageData
-        self.color = color 
+        self.color = color
     }
 }
 

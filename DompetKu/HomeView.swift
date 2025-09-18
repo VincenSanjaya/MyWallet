@@ -4,6 +4,7 @@ import SwiftData
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isShowingAddView = false
+    @State private var transactionToEdit: Transaction?
     @Query(sort: \Transaction.date, order: .reverse) var allTransactions: [Transaction]
 
     @State private var selectedCategory: String = "All"
@@ -12,6 +13,9 @@ struct HomeView: View {
     private func deleteTransaction(at offsets: IndexSet, from filteredTransactions: [Transaction]) {
         let transactionsToDelete = offsets.map { filteredTransactions[$0] }
         for transaction in transactionsToDelete {
+            if let account = transaction.account {
+                account.balance += transaction.amount
+            }
             modelContext.delete(transaction)
         }
     }
@@ -74,22 +78,27 @@ struct HomeView: View {
                 } else {
                     List {
                         ForEach(filteredTodaysTransactions) { transaction in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(transaction.name).font(.headline)
-                                    HStack(spacing: 4) {
-                                        Text(transaction.category)
-                                        if let accountName = transaction.account?.name {
-                                            Text("•")
-                                            Image(systemName: "wallet.pass.fill")
-                                            Text(accountName)
+                            Button {
+                                transactionToEdit = transaction
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(transaction.name).font(.headline)
+                                        HStack(spacing: 4) {
+                                            Text(transaction.category)
+                                            if let accountName = transaction.account?.name {
+                                                Text("•")
+                                                Image(systemName: "wallet.pass.fill")
+                                                Text(accountName)
+                                            }
                                         }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                     }
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
                                 }
-                                Spacer()
-                                Text(transaction.amount, format: .currency(code: "IDR")).font(.headline.bold()).foregroundStyle(.red)
+                                .foregroundStyle(.primary)
                             }
                         }
                         .onDelete { offsets in
@@ -114,7 +123,10 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $isShowingAddView) {
-            AddTransactionView()
+            TransactionFormView()
+        }
+        .sheet(item: $transactionToEdit) { transaction in
+            TransactionFormView(transactionToEdit: transaction)
         }
     }
 }

@@ -3,6 +3,7 @@ import SwiftData
 import Charts
 
 struct WalletView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \WalletAccount.name) var accounts: [WalletAccount]
     @State private var isShowingAddAccountView = false
     @State private var accountToEdit: WalletAccount?
@@ -20,6 +21,13 @@ struct WalletView: View {
                 .font(.title2)
                 .foregroundStyle(account.color)
                 .frame(width: 40)
+        }
+    }
+    
+    private func deleteAccount(at offsets: IndexSet) {
+        for offset in offsets {
+            let account = accounts[offset]
+            modelContext.delete(account)
         }
     }
     
@@ -65,6 +73,7 @@ struct WalletView: View {
                                     }
                                 }
                             }
+                            .onDelete(perform: deleteAccount) // <-- Tambahkan modifier ini
                         }
                     }
                     .listStyle(.insetGrouped)
