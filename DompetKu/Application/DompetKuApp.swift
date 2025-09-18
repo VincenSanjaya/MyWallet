@@ -7,7 +7,7 @@ struct DompetKuApp: App {
         WindowGroup {
             MainTabView()
         }
-        .modelContainer(for: [Transaction.self, WalletAccount.self, AccountLog.self])
+        .modelContainer(for: [Transaction.self, WalletAccount.self, AccountLog.self, Budget.self, Category.self])
 
     }
 }

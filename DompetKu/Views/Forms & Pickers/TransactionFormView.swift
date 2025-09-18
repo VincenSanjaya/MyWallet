@@ -9,15 +9,14 @@ struct TransactionFormView: View {
     
     @State private var name: String = ""
     @State private var amount: Double = 0
-    @State private var category: String = "Makanan"
+    @State private var category: String = ""
     @State private var date: Date = .now
     @State private var selectedAccountID: String?
     
+    @Query(sort: \Category.name) var categories: [Category]
     @Query var accounts: [WalletAccount]
     @State private var isShowingAlert = false
     @State private var alertMessage = ""
-    
-    let categories = ["Makanan", "Transportasi", "Hiburan", "Belanja", "Lainnya"]
     
     @State private var originalAmount: Double = 0
     @State private var originalAccount: WalletAccount?
@@ -57,7 +56,9 @@ struct TransactionFormView: View {
                     TextField("Nama Pengeluaran", text: $name)
                     TextField("Jumlah", value: $amount, format: .currency(code: "IDR")).keyboardType(.decimalPad)
                     Picker("Kategori", selection: $category) {
-                        ForEach(categories, id: \.self) { Text($0) }
+                        ForEach(categories) { cat in
+                            Text(cat.name).tag(cat.name)
+                        }
                     }
                     DatePicker("Tanggal", selection: $date, displayedComponents: .date)
                 }
@@ -94,7 +95,11 @@ struct TransactionFormView: View {
                         } else if amount <= 0 {
                             alertMessage = "Jumlah harus lebih besar dari nol."
                             isShowingAlert = true
-                        } else {
+                        } else if category.isEmpty {
+                            alertMessage = "Anda harus memilih kategori."
+                            isShowingAlert = true
+                        }
+                        else {
                             save()
                             dismiss()
                         }
@@ -110,6 +115,8 @@ struct TransactionFormView: View {
                     selectedAccountID = transaction.account?.id
                     originalAmount = transaction.amount
                     originalAccount = transaction.account
+                } else if let firstCategory = categories.first {
+                    category = firstCategory.name
                 }
             }
         }

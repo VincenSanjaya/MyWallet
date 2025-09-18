@@ -8,7 +8,7 @@ struct HomeView: View {
     @Query(sort: \Transaction.date, order: .reverse) var allTransactions: [Transaction]
 
     @State private var selectedCategory: String = "All"
-    let categories = ["All", "Makanan", "Transportasi", "Hiburan", "Belanja", "Lainnya"]
+    @Query(sort: \Category.name) var categories: [Category]
 
     private func deleteTransaction(at offsets: IndexSet, from filteredTransactions: [Transaction]) {
         let transactionsToDelete = offsets.map { filteredTransactions[$0] }
@@ -113,7 +113,10 @@ struct HomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         Picker("Kategori", selection: $selectedCategory) {
-                            ForEach(categories, id: \.self) { Text($0) }
+                            Text("All").tag("All")
+                            ForEach(categories) { cat in
+                                Text(cat.name).tag(cat.name)
+                            }
                         }
                     } label: { Image(systemName: "line.3.horizontal.decrease.circle").font(.title2) }
                 }
