@@ -22,6 +22,11 @@ struct TransactionFormView: View {
     @State private var originalAmount: Double = 0
     @State private var originalAccount: WalletAccount?
     @State private var originalType: TransactionType = .expense
+    
+    private var selectedAccount: WalletAccount? {
+        guard let selectedAccountID = selectedAccountID else { return nil }
+        return accounts.first { $0.id == selectedAccountID }
+    }
 
     private func save() {
         guard let accountID = selectedAccountID,
@@ -34,27 +39,14 @@ struct TransactionFormView: View {
         let categoryToSave = transactionType == .expense ? category : nil
         
         if let transaction = transactionToEdit {
-            let amountDifference = amount - originalAmount
-            if originalAccount?.id == selectedAccount.id {
-                if originalType == .expense && transactionType == .expense {
-                    originalAccount?.balance -= amountDifference
-                } else if originalType == .income && transactionType == .income {
-                    originalAccount?.balance += amountDifference
-                } else {
-                    originalAccount?.balance += originalAmount
-                    selectedAccount.balance += (transactionType == .income ? amount : -amount)
-                }
-            } else {
-                originalAccount?.balance += (originalType == .income ? -originalAmount : originalAmount)
-                selectedAccount.balance += (transactionType == .income ? amount : -amount)
-            }
-
+            originalAccount?.balance += (originalType == .income ? -originalAmount : originalAmount)
             transaction.name = name
             transaction.amount = amount
             transaction.category = categoryToSave
             transaction.date = date
             transaction.account = selectedAccount
             transaction.transactionType = transactionType
+            selectedAccount.balance += (transactionType == .income ? amount : -amount)
         } else {
             let amountToChange = transactionType == .income ? amount : -amount
             selectedAccount.balance += amountToChange
@@ -144,5 +136,6 @@ struct TransactionFormView: View {
                 }
             }
         }
+        .tint(Color.brandPrimary)
     }
 }

@@ -20,30 +20,31 @@ struct HistoryView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
                 DatePicker("Pilih Tanggal", selection: $selectedDate, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .padding(.horizontal)
+                    .background(Color.white.shadow(color: .black.opacity(0.05), radius: 4, y: 4))
 
                 let transactionsOnSelectedDate = allTransactions.filter { transaction in
                     Calendar.current.isDate(transaction.date, inSameDayAs: selectedDate)
                 }
                 
                 if !transactionsOnSelectedDate.isEmpty {
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 8) {
                         let totalIncome = transactionsOnSelectedDate.filter { $0.transactionType == .income }.reduce(0) { $0 + $1.amount }
                         let totalExpense = transactionsOnSelectedDate.filter { $0.transactionType == .expense }.reduce(0) { $0 + $1.amount }
 
-                        Text("Ringkasan Tanggal Ini")
+                        Text("RINGKASAN TANGGAL INI")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.bottom, 2)
+                            .foregroundStyle(Color.textSecondary)
+                            .padding(.top)
                         
                         HStack {
                             Text("Pemasukan")
                             Spacer()
                             Text(totalIncome, format: .currency(code: "IDR"))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.accentIncome)
                         }
                         .font(.subheadline)
                         
@@ -51,25 +52,26 @@ struct HistoryView: View {
                             Text("Pengeluaran")
                             Spacer()
                             Text(totalExpense, format: .currency(code: "IDR"))
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Color.accentExpense)
                         }
                         .font(.subheadline)
                         
                         Divider()
                         
                         HStack {
-                            Text("Arus Kas Bersih")
+                            Text("Total")
                                 .font(.headline)
                             Spacer()
                             Text(totalIncome - totalExpense, format: .currency(code: "IDR"))
                                 .font(.headline.bold())
+                                .foregroundStyle(Color.textPrimary)
                         }
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.thinMaterial)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding()
                 }
                 
                 if transactionsOnSelectedDate.isEmpty {
@@ -80,38 +82,20 @@ struct HistoryView: View {
                     List {
                         ForEach(transactionsOnSelectedDate) { transaction in
                             Button(action: { transactionToEdit = transaction }) {
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(transaction.name).font(.headline)
-                                        HStack(spacing: 4) {
-                                            if let categoryName = transaction.category {
-                                                Text(categoryName)
-                                            }
-
-                                            if let accountName = transaction.account?.name {
-                                                Text(transaction.category == nil ? "" : "•")
-                                                Image(systemName: "wallet.pass.fill")
-                                                Text(accountName)
-                                            }
-                                        }
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Text(transaction.amount, format: .currency(code: "IDR"))
-                                        .font(.headline.bold())
-                                        .foregroundStyle(transaction.transactionType == .income ? .green : .red)
-                                }
-                                .foregroundStyle(.primary)
+                                TransactionRowView(transaction: transaction)
                             }
+                            .listRowBackground(Color.appBackground)
+                            .listRowSeparator(.hidden)
                         }
                         .onDelete { offsets in
                             deleteTransaction(at: offsets, from: transactionsOnSelectedDate)
                         }
                     }
                     .listStyle(.plain)
+                    .background(Color.appBackground)
                 }
             }
+            .background(Color.appBackground)
             .navigationTitle("Riwayat Transaksi")
         }
         .sheet(item: $transactionToEdit) { transaction in

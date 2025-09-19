@@ -23,7 +23,7 @@ struct HomeView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
                 let filteredTodaysTransactions = allTransactions.filter { transaction in
                     let isToday = Calendar.current.isDateInToday(transaction.date)
                     let matchesCategory = selectedCategory == "All" || transaction.category == selectedCategory
@@ -31,20 +31,20 @@ struct HomeView: View {
                 }
                 
                 if !filteredTodaysTransactions.isEmpty {
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 8) {
                         let totalIncome = filteredTodaysTransactions.filter { $0.transactionType == .income }.reduce(0) { $0 + $1.amount }
                         let totalExpense = filteredTodaysTransactions.filter { $0.transactionType == .expense }.reduce(0) { $0 + $1.amount }
 
-                        Text("Ringkasan Hari Ini")
+                        Text("RINGKASAN HARI INI")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.bottom, 2)
+                            .foregroundStyle(Color.textSecondary)
+                            .padding(.top)
                         
                         HStack {
                             Text("Pemasukan")
                             Spacer()
                             Text(totalIncome, format: .currency(code: "IDR"))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.accentIncome)
                         }
                         .font(.subheadline)
                         
@@ -52,25 +52,26 @@ struct HomeView: View {
                             Text("Pengeluaran")
                             Spacer()
                             Text(totalExpense, format: .currency(code: "IDR"))
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Color.accentExpense)
                         }
                         .font(.subheadline)
                         
                         Divider()
                         
                         HStack {
-                            Text("Arus Kas Bersih")
+                            Text("Total")
                                 .font(.headline)
                             Spacer()
                             Text(totalIncome - totalExpense, format: .currency(code: "IDR"))
                                 .font(.headline.bold())
+                                .foregroundStyle(Color.textPrimary)
                         }
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.thinMaterial)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding()
                 }
                 
                 if filteredTodaysTransactions.isEmpty {
@@ -84,47 +85,27 @@ struct HomeView: View {
                     List {
                         ForEach(filteredTodaysTransactions) { transaction in
                             Button(action: { transactionToEdit = transaction }) {
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(transaction.name).font(.headline)
-                                        HStack(spacing: 4) {
-                                            if let categoryName = transaction.category {
-                                                Text(categoryName)
-                                            }
-                                            
-                                            if let accountName = transaction.account?.name {
-                                                Text(transaction.category == nil ? "" : "•")
-                                                Image(systemName: "wallet.pass.fill")
-                                                Text(accountName)
-                                            }
-                                        }
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Text(transaction.amount, format: .currency(code: "IDR"))
-                                        .font(.headline.bold())
-                                        .foregroundStyle(transaction.transactionType == .income ? .green : .red)
-                                }
-                                .foregroundStyle(.primary)
+                                TransactionRowView(transaction: transaction)
                             }
+                            .listRowBackground(Color.appBackground)
+                            .listRowSeparator(.hidden)
                         }
                         .onDelete { offsets in
                             deleteTransaction(at: offsets, from: filteredTodaysTransactions)
                         }
                     }
                     .listStyle(.plain)
+                    .background(Color.appBackground)
                 }
             }
+            .background(Color.appBackground)
             .navigationTitle(selectedCategory == "All" ? "Hari Ini" : selectedCategory)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         Picker("Kategori", selection: $selectedCategory) {
                             Text("All").tag("All")
-                            ForEach(categories) { cat in
-                                Text(cat.name).tag(cat.name)
-                            }
+                            ForEach(categories) { cat in Text(cat.name).tag(cat.name) }
                         }
                     } label: { Image(systemName: "line.3.horizontal.decrease.circle").font(.title2) }
                 }
@@ -133,11 +114,7 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $isShowingAddView) {
-            TransactionFormView()
-        }
-        .sheet(item: $transactionToEdit) { transaction in
-            TransactionFormView(transactionToEdit: transaction)
-        }
+        .sheet(isPresented: $isShowingAddView) { TransactionFormView() }
+        .sheet(item: $transactionToEdit) { transaction in TransactionFormView(transactionToEdit: transaction) }
     }
 }

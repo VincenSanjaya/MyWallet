@@ -26,15 +26,7 @@ struct ReportsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                Picker("Pilih Grafik", selection: $selectedChartType) {
-                    ForEach(ChartType.allCases, id: \.self) { type in
-                        Text(type.rawValue)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
+            VStack(spacing: 0) {
                 let monthlyTransactions = transactions.filter { transaction in
                     Calendar.current.isDate(transaction.date, equalTo: .now, toGranularity: .month)
                 }
@@ -42,31 +34,52 @@ struct ReportsView: View {
                 let expenseTransactions = monthlyTransactions.filter { $0.transactionType == .expense }
 
                 if expenseTransactions.isEmpty {
+                    Spacer()
                     ContentUnavailableView(
                         "Data Tidak Cukup",
                         systemImage: "chart.bar.xaxis",
                         description: Text("Belum ada pengeluaran bulan ini untuk membuat laporan.")
                     )
+                    Spacer()
                 } else {
-                    VStack(alignment: .leading) {
-                        let totalSpending = expenseTransactions.reduce(0) { $0 + $1.amount }
-                        Text("Total Pengeluaran Bulan Ini")
-                            .font(.headline)
-                        Text(totalSpending, format: .currency(code: "IDR"))
-                            .font(.largeTitle.bold())
-                            .padding(.bottom)
-                        
-                        if selectedChartType == .bar {
-                            barChartView(from: expenseTransactions)
-                        } else if selectedChartType == .pie {
-                            pieChartView(from: expenseTransactions)
-                        } else {
-                            lineChartView(from: expenseTransactions)
+                    VStack {
+                        Picker("Pilih Grafik", selection: $selectedChartType) {
+                            ForEach(ChartType.allCases, id: \.self) { type in
+                                Text(type.rawValue)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.bottom)
+
+                        VStack(alignment: .leading) {
+                            let totalSpending = expenseTransactions.reduce(0) { $0 + $1.amount }
+                            Text("TOTAL PENGELUARAN BULAN INI")
+                                .font(.caption)
+                                .foregroundStyle(Color.textSecondary)
+                            Text(totalSpending, format: .currency(code: "IDR"))
+                                .font(.title.bold())
+                                .foregroundStyle(Color.textPrimary)
+                            
+                            if selectedChartType == .bar {
+                                barChartView(from: expenseTransactions)
+                            } else if selectedChartType == .pie {
+                                pieChartView(from: expenseTransactions)
+                            } else {
+                                lineChartView(from: expenseTransactions)
+                            }
+                        }
+                        .frame(maxHeight: 400)
                     }
                     .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding()
+                    
+                    Spacer()
                 }
             }
+            .background(Color.appBackground)
             .navigationTitle("Laporan")
         }
     }
