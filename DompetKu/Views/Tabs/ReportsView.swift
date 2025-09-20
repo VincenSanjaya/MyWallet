@@ -84,14 +84,25 @@ struct ReportsView: View {
         }
     }
     
+    private func spendingByCategory(from transactions: [Transaction]) -> [SpendingDataPoint] {
+        let uncategorizedLabel = "Tanpa Kategori"
+
+        return Dictionary(grouping: transactions, by: { transaction in
+            if let category = transaction.category, !category.isEmpty {
+                return category
+            }
+            return uncategorizedLabel
+        })
+        .mapValues { $0.reduce(0) { $0 + $1.amount } }
+        .map { SpendingDataPoint(name: $0.key, totalAmount: $0.value) }
+        .sorted(by: { $0.totalAmount > $1.totalAmount })
+    }
+
     @ViewBuilder
     private func barChartView(from transactions: [Transaction]) -> some View {
-        let spendingByCategory = Dictionary(grouping: transactions, by: { $0.category! })
-            .mapValues { $0.reduce(0) { $0 + $1.amount } }
-            .map { SpendingDataPoint(name: $0.key, totalAmount: $0.value) }
-            .sorted(by: { $0.totalAmount > $1.totalAmount })
-        
-        Chart(spendingByCategory) { data in
+        let categoryData = spendingByCategory(from: transactions)
+
+        Chart(categoryData) { data in
             BarMark(
                 x: .value("Pengeluaran", data.totalAmount),
                 y: .value("Kategori", data.name)
@@ -103,11 +114,9 @@ struct ReportsView: View {
 
     @ViewBuilder
     private func pieChartView(from transactions: [Transaction]) -> some View {
-        let spendingByCategory = Dictionary(grouping: transactions, by: { $0.category! })
-            .mapValues { $0.reduce(0) { $0 + $1.amount } }
-            .map { SpendingDataPoint(name: $0.key, totalAmount: $0.value) }
+        let categoryData = spendingByCategory(from: transactions)
 
-        Chart(spendingByCategory) { data in
+        Chart(categoryData) { data in
             SectorMark(
                 angle: .value("Pengeluaran", data.totalAmount),
                 innerRadius: .ratio(0.6),
